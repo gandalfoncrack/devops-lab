@@ -39,12 +39,12 @@ pipeline {
         dir('terraform') {
           sh '''
             mkdir -p /var/jenkins_home/tfstate
-            terraform init -input=false
+            tofu init -input=false
             MYIP="$(curl -s https://checkip.amazonaws.com)/32"
             if [ "$DESTROY" = "true" ]; then
-              terraform destroy -auto-approve -input=false -var "my_ip_cidr=$MYIP"
+              tofu destroy -auto-approve -input=false -var "my_ip_cidr=$MYIP"
             else
-              terraform apply -auto-approve -input=false -var "my_ip_cidr=$MYIP"
+              tofu apply -auto-approve -input=false -var "my_ip_cidr=$MYIP"
             fi
           '''
         }
@@ -56,7 +56,7 @@ pipeline {
       steps {
         withCredentials([sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'KEY')]) {
           sh '''
-            IP="$(cd terraform && terraform output -raw public_ip)"
+            IP="$(cd terraform && tofu output -raw public_ip)"
             export ANSIBLE_HOST_KEY_CHECKING=False
             ansible-playbook -i "$IP," -u ubuntu --private-key "$KEY" ansible/site.yml \
               -e "image_name=$DH_USR/lab-web:$BUILD_NUMBER"
@@ -69,7 +69,7 @@ pipeline {
       when { expression { !params.DESTROY } }
       steps {
         sh '''
-          IP="$(cd terraform && terraform output -raw public_ip)"
+          IP="$(cd terraform && tofu output -raw public_ip)"
           for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
             if curl -fs "http://$IP:30080" | grep -q "Build $BUILD_NUMBER<"; then
               echo "Smoke test passed: http://$IP:30080"
