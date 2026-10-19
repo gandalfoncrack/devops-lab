@@ -34,6 +34,11 @@ data "aws_ami" "ubuntu" {
     name   = "name"
     values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
   }
+
+  filter {
+    name   = "free-tier-eligible"
+    values = ["true"]
+  }
 }
 
 resource "aws_key_pair" "lab" {
